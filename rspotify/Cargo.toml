@@ -1,0 +1,11 @@
+[package]
+name = "rspotify"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenvy = "0.15.7"
+futures = "0.3.31"
+futures-util = "0.3.31"
+rspotify = { version = "0.14.0", features = ["env-file", "cli"] }
+tokio = { version = "1.44.1", features = ["full"] }

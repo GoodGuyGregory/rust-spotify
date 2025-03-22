@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 axum = "0.8.1"
 dotenvy = "0.15.7"
+querystring = "1.1.0"
 rand = "0.9.0"
 reqwest = "0.12.15"
 serde = { version = "1.0.219", features = ["derive"] }

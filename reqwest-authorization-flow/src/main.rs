@@ -85,7 +85,7 @@ async fn connect_to_database() -> Result<PgPool, Box<dyn Error>> {
     Ok(pool)
 }
 
-
+// ideally you would include a JWT Claim to prevision for access here.
 async fn get_spotify_login() -> impl IntoResponse {
 
     println!("Server: Attempting Spotify Login 🔊");
@@ -93,13 +93,15 @@ async fn get_spotify_login() -> impl IntoResponse {
      // produce a random string from the rand crate
     let state: String = random_string_generation(16);
 
+    // include this state within the users_id database entry to compare from the returned request
+
     let  client_credentials: String = dotenvy::var("SPOTIFY_CLIENT_ID").expect("SPOTIFY_CLIENT_ID must be set");
     let sp_callback: String = dotenvy::var("SPOTIFY_REDIRECT_URI").expect("REDIRECT URI must be set");
 
     
     let query_params = vec![("response_type", "code"),
                             ("client_id", &client_credentials),
-                            ("scope", "user-top-read"),
+                            ("scope", "user-top-read user-library-read"),
                             ("redirect_uri", &sp_callback),
                             ("state", &state)];
 
@@ -128,11 +130,15 @@ async fn spotify_callback_handler(Query(callback_auth): Query<CallbackAuth>, coo
             Ok((StatusCode::UNAUTHORIZED, Json(json_response)))
         }
         Some(exchange_code) => {
+
+            // check the state as required within the Spotify API documents
             let client_id = dotenvy::var("SPOTIFY_CLIENT_ID").expect("SPOTIFY_CLIENT_ID is not set");
             let client_secret = dotenvy::var("SPOTIFY_CLIENT_SECRET").expect("SPOTIFY_CLIENT_SECRET is not set");
             let sp_callback = dotenvy::var("SPOTIFY_REDIRECT_URI").expect("SPOTIFY_REDIRECT_URI is not set");
             let authorization_type = String::from("authorization_code");
 
+            // spotify authentication request parameters are listed here:
+            // https://developer.spotify.com/documentation/web-api/tutorials/code-flow
             let mut params_body = HashMap::new();
             // add the body required
             params_body.insert("code", exchange_code.clone());

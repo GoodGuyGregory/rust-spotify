@@ -1,4 +1,4 @@
 /reqwest-authorization-flow/.env
 reqwest-authorization-flow/target/*
-jwt-auth-axum/target/
+jwt-auth-axum/target/*
 jwt-auth-axum/.env

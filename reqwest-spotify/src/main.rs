@@ -15,7 +15,7 @@ struct ExternalUrls {
     spotify: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)] 
 struct Artist {
     name: String,
     external_urls: ExternalUrls,

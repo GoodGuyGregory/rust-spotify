@@ -5,10 +5,15 @@ edition = "2021"
 
 [dependencies]
 axum = "0.8.1"
+base64 = "0.22.1"
+bcrypt = "0.17.0"
 dotenvy = "0.15.7"
 querystring = "1.1.0"
 rand = "0.9.0"
-reqwest = "0.12.15"
+reqwest = {version = "0.12.15", features=["blocking", "json"]}
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+sqlx = { version = "0.8.3", features = ["runtime-async-std-native-tls", "postgres", "chrono", "uuid"] }
 tokio = { version = "1.44.1", features = ["full"] }
+tower-cookies = "0.11.0"
+uuid = { version = "1.16.0", features = ["serde", "v4"] }

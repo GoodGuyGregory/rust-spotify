@@ -1,5 +1,10 @@
 use std::time::SystemTime;
-use axum::{Router, routing::{post, get}, http::StatusCode, response::IntoResponse, Json};
+use axum::{Router, routing::{post, get}, http::{request::Parts, StatusCode},
+           extract::FromRequestParts,  response::{IntoResponse}, RequestPartsExt, Json};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
 use serde_json::json;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Serialize, Deserialize};
@@ -36,11 +41,14 @@ impl UserResponseToken {
     }
 }
 
+
+// Struct to represent our Keys
 struct Keys {
     encoding: EncodingKey,
     decoding: DecodingKey,
 }
 
+// implementation to support Encoding and Decoding the Secret from the supplied constructor
 impl Keys {
     fn new(secret: &[u8]) -> Self {
         Self {
@@ -64,8 +72,48 @@ struct PrivateMessage {
     private_message: String,
 }
 
+// this is the implementation for the FromRequestParts for Claims,
+// this is JWT struct specific but it will allow us to use Claims to decide
+// if we want to consume the request for accessing specific endpoints.
+// this is all possible because of FromRequestParts from Axum
+// https://docs.rs/axum/latest/axum/extract/trait.FromRequestParts.html
+// if the request has a valid claim we all the system to respond,
+// if not we aren't going to allow contact for the user within the api
+// version 8.0 removes the #[async_trait]
+// https://tokio.rs/blog/2025-01-01-announcing-axum-0-8-0
+impl<S> FromRequestParts<S> for Claims
+where
+    S: Send + Sync,
+{
+    type Rejection = AuthError;
+    // this will extract the token from the authentication header
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        // Extract the token from the authorization header
+        let TypedHeader(Authorization(bearer)) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|_| AuthError::InvalidToken)?;
+
+        // decode the secret token
+        // read the secret JWT KEY
+        let jwt_secret: String = dotenvy::var("JWT_SECRET").expect("JWT_SECRET must be set");
+
+        // set the key from the internal provided tokens
+        let jwt_key = Keys::new(jwt_secret.as_bytes());
+
+        // decode the user data's token from the .env provided
+        // leveraging the decoding from the jwt_secret Keys
+        let token_date = decode::<Claims>(bearer.token(), &jwt_key.decoding, &Validation::default())
+            .map_err(|_| AuthError::InvalidToken)?;
+
+        Ok(token_date.claims)
+    }
+}
+
+
 
 // implement a struct for AuthError with the IntoResponse trait overridden
+// this is all in the effort to use a custom response for Axum Responses
 impl IntoResponse for AuthError {
     fn into_response(self) -> axum::response::Response {
         let (status, message) = match self {
@@ -124,7 +172,7 @@ async fn login_user(Json(user_auth): Json<UserAuth>) -> Result<Json<UserResponse
     Ok(Json(UserResponseToken::new(token)))
 }
 
-async fn private_message(claims: Claims) -> Result<Json<serde_json::Value>, AuthError> {
+async fn private_message(_claims: Claims) -> Result<Json<serde_json::Value>, AuthError> {
     println!("Server GET: private message ");
     // demonstrate why authentication is important:
 

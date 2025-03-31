@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 axum = "0.8.1"
+axum-extra = { version = "0.10.1", features = ["typed-header"] }
 bcrypt = "0.17.0"
 dotenvy = "0.15.7"
 jsonwebtoken = "9.3.1"
